@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Rent vs Sell Calculator with Charts</title>
+    <title>Mortgage Calculations</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -386,7 +386,7 @@
                             </div>
                             <div class="input-group">
                                 <label for="mortgageRate">Mortgage Interest Rate (%)</label>
-                                <input type="number" id="mortgageRate" value="6.5" min="0" max="15" step="0.1" onchange="updateCalculation()">
+                                <input type="number" id="mortgageRate" value="6.25" min="0" max="15" step="0.05" onchange="updateCalculation()">
                             </div>
                         </div>
                     </div>
@@ -557,14 +557,14 @@
                 <h3>💰 Loan Details</h3>
                 <div class="input-group">
                     <label for="loanAmount">Loan Amount ($)</label>
-                    <input type="number" id="loanAmount" value="175000" min="0" onchange="calculateMortgage()" placeholder="Amount to borrow">
+                    <input type="number" id="loanAmount" value="431000" min="0" onchange="calculateMortgage()" placeholder="Amount to borrow">
                 </div>
                 <div class="slider-group">
                     <div class="slider-label">
                         <span>Interest Rate (Annual)</span>
-                        <span class="slider-value" id="mortgageInterestValue">6.5%</span>
+                        <span class="slider-value" id="mortgageInterestValue">6.25%</span>
                     </div>
-                    <input type="range" id="mortgageInterestRate" min="2" max="10" step="0.1" value="6.5" oninput="updateMortgageSlider('mortgageInterest', this.value)">
+                    <input type="range" id="mortgageInterestRate" min="2" max="10" step="0.05" value="6.25" oninput="updateMortgageSlider('mortgageInterest', this.value)">
                 </div>
                 <div class="slider-group">
                     <div class="slider-label">
@@ -603,8 +603,137 @@
         </div>
     </div>
 
+    <!-- Effective Interest Rate Calculator -->
+    <div class="container" style="margin-top: 20px;">
+        <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px; font-size: 20px;">💵 Extra Payment Analysis & Effective Interest Rate</h2>
+        
+        <div style="display: grid; grid-template-columns: 350px 1fr 350px; gap: 20px; align-items: start;">
+            <!-- Extra Payment Input -->
+            <div class="control-panel" style="border-left: 4px solid #9b59b6;">
+                <h3>💰 Extra Monthly Payment</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Extra Payment Amount <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Additional amount you pay each month beyond the required payment. This goes directly to principal and reduces total interest paid.</span>
+                        </span></span>
+                        <span class="slider-value" id="extraPaymentValue">$0</span>
+                    </div>
+                    <input type="range" id="extraPayment" min="0" max="3000" step="50" value="0" oninput="updateExtraPayment(this.value)">
+                </div>
+                
+                <div style="margin: 20px 0; border-top: 2px solid #e0e0e0; padding-top: 15px;">
+                    <div style="font-weight: bold; margin-bottom: 10px; color: #3498db; font-size: 14px;">🎯 Or Target an Effective Rate</div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>Target Effective Rate <span class="tooltip">ℹ️
+                                <span class="tooltiptext">Set your desired effective interest rate. The extra payment slider above will automatically adjust to achieve this rate.</span>
+                            </span></span>
+                            <span class="slider-value" id="targetRateValue">6.50%</span>
+                        </div>
+                        <input type="range" id="targetRate" min="0.5" max="10" step="0.05" value="6.5" oninput="updateTargetRate(this.value)">
+                    </div>
+                    <div id="targetRateWarning" style="margin-top: 8px; padding: 8px; background: #e3f2fd; border-radius: 5px; border-left: 3px solid #2196f3; display: none; font-size: 12px;">
+                        <span style="color: #1565c0;"></span>
+                    </div>
+                </div>
+                
+                <div style="margin: 20px 0; border-top: 2px solid #e0e0e0; padding-top: 15px;">
+                    <div style="font-weight: bold; margin-bottom: 10px; color: #e67e22; font-size: 14px;">💵 One-Time Lump Sum Payment</div>
+                    <div class="input-group">
+                        <label for="lumpSumAmount">Lump Sum Amount ($) <span class="tooltip">ℹ️
+                            <span class="tooltiptext">A one-time extra payment you plan to make towards principal at a specific month.</span>
+                        </span></label>
+                        <input type="number" id="lumpSumAmount" value="0" min="0" step="1000" onchange="calculateEffectiveRate()" placeholder="e.g., 10000">
+                    </div>
+                    <div class="input-group" style="margin-top: 10px;">
+                        <label for="lumpSumMonth">Payment Month <span class="tooltip">ℹ️
+                            <span class="tooltiptext">The month number when you'll make this lump sum payment (e.g., month 12 = 1 year, month 60 = 5 years).</span>
+                        </span></label>
+                        <input type="number" id="lumpSumMonth" value="12" min="1" max="360" onchange="calculateEffectiveRate()" placeholder="e.g., 12">
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">New Monthly Payment:</span>
+                        <span id="totalMonthlyPayment" style="font-weight: bold; color: #2c3e50;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-size: 12px; color: #7f8c8d;">Payment Multiplier:</span>
+                        <span id="paymentMultiplier" style="font-weight: bold; color: #9b59b6;">1.0x</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loan Balance Chart -->
+            <div class="control-panel" style="border-left: 4px solid #3498db;">
+                <h3>📈 Loan Balance Over Time</h3>
+                <div style="position: relative; height: 400px;">
+                    <canvas id="loanBalanceChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Comparison Results -->
+            <div class="control-panel" style="border-left: 4px solid #e67e22;">
+                <h3>📊 Impact Comparison</h3>
+                <div style="background: #fff; padding: 12px; border-radius: 5px; border: 2px solid #ecf0f1; margin-bottom: 12px;">
+                    <div style="text-align: center; margin-bottom: 8px; color: #7f8c8d; font-size: 12px; font-weight: bold;">STANDARD LOAN</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Payoff Time:</span>
+                        <span id="standardPayoffTime" style="font-weight: bold;">0 years</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Total Interest:</span>
+                        <span id="standardTotalInterest" style="font-weight: bold; color: #e74c3c;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-size: 12px;">Nominal Rate:</span>
+                        <span id="standardRate" style="font-weight: bold;">0.0%</span>
+                    </div>
+                </div>
+                <div style="background: #e8f5e9; padding: 12px; border-radius: 5px; border: 2px solid #27ae60;">
+                    <div style="text-align: center; margin-bottom: 8px; color: #27ae60; font-size: 12px; font-weight: bold;">WITH EXTRA PAYMENTS</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Payoff Time:</span>
+                        <span id="extraPayoffTime" style="font-weight: bold; color: #27ae60;">0 years</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Total Interest:</span>
+                        <span id="extraTotalInterest" style="font-weight: bold; color: #27ae60;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-size: 12px;">Effective Rate:</span>
+                        <span id="effectiveRate" style="font-weight: bold; font-size: 16px; color: #27ae60;">0.0%</span>
+                    </div>
+                </div>
+                <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 12px; border: 2px solid #ffc107;">
+                    <div style="text-align: center; margin-bottom: 5px; color: #856404; font-size: 12px; font-weight: bold;">💰 SAVINGS</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Time Saved:</span>
+                        <span id="timeSaved" style="font-weight: bold; color: #856404;">0 years</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-size: 12px;">Interest Saved:</span>
+                        <span id="interestSaved" style="font-weight: bold; font-size: 16px; color: #856404;">$0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 12px; background: #e3f2fd; border-radius: 5px; border-left: 4px solid #2196f3;">
+            <div style="font-weight: bold; margin-bottom: 5px; color: #1976d2;">📝 What is "Effective Interest Rate"?</div>
+            <div style="font-size: 13px; color: #34495e; line-height: 1.5;">
+                The effective interest rate shows what your <strong>actual</strong> borrowing cost becomes when making extra payments. 
+                While your nominal rate stays the same (e.g., 6.25%), paying extra reduces the total interest you pay over the life of the loan. 
+                The effective rate calculates what interest rate on the original loan would have resulted in the same total interest 
+                you'll actually pay with your accelerated payment schedule. Lower is better!
+            </div>
+        </div>
+    </div>
+
     <script>
         let chart;
+        let loanBalanceChart;
         
         function calculateAppreciationRate() {
             const currentValue = parseFloat(document.getElementById('currentValue').value) || 0;
@@ -662,7 +791,7 @@
         function updateMortgageSlider(type, value) {
             switch(type) {
                 case 'mortgageInterest':
-                    document.getElementById('mortgageInterestValue').textContent = parseFloat(value).toFixed(1) + '%';
+                    document.getElementById('mortgageInterestValue').textContent = parseFloat(value).toFixed(2) + '%';
                     break;
                 case 'loanTerm':
                     document.getElementById('loanTermValue').textContent = parseInt(value) + ' years';
@@ -699,6 +828,516 @@
             document.getElementById('principalInterestResult').textContent = '$' + Math.round(monthlyPayment).toLocaleString();
             document.getElementById('totalInterestResult').textContent = '$' + Math.round(totalInterest).toLocaleString();
             document.getElementById('totalAmountResult').textContent = '$' + Math.round(totalAmount).toLocaleString();
+            
+            // Update target rate slider to match current rate
+            document.getElementById('targetRate').value = annualRate;
+            document.getElementById('targetRateValue').textContent = annualRate.toFixed(2) + '%';
+            
+            // Update effective interest rate calculator
+            calculateEffectiveRate();
+        }
+        
+        function updateExtraPayment(value) {
+            document.getElementById('extraPaymentValue').textContent = '$' + parseInt(value).toLocaleString();
+            calculateEffectiveRate();
+            
+            // Update the target rate slider to match the achieved effective rate
+            const effectiveRateText = document.getElementById('effectiveRate').textContent;
+            const effectiveRateValue = parseFloat(effectiveRateText.replace('%', '')) || 0;
+            
+            if (effectiveRateValue > 0) {
+                document.getElementById('targetRate').value = effectiveRateValue;
+                document.getElementById('targetRateValue').textContent = effectiveRateValue.toFixed(2) + '%';
+            }
+        }
+        
+        function calculateEffectiveRate() {
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value) || 0;
+            const annualRate = parseFloat(document.getElementById('mortgageInterestRate').value) || 0;
+            const loanTermYears = parseInt(document.getElementById('loanTerm').value) || 30;
+            const extraPayment = parseFloat(document.getElementById('extraPayment').value) || 0;
+            const lumpSumAmount = parseFloat(document.getElementById('lumpSumAmount').value) || 0;
+            const lumpSumMonth = parseInt(document.getElementById('lumpSumMonth').value) || 12;
+            
+            if (loanAmount <= 0 || annualRate <= 0) {
+                // Reset displays
+                document.getElementById('totalMonthlyPayment').textContent = '$0';
+                document.getElementById('paymentMultiplier').textContent = '1.0x';
+                document.getElementById('standardPayoffTime').textContent = '0 years';
+                document.getElementById('standardTotalInterest').textContent = '$0';
+                document.getElementById('standardRate').textContent = '0.0%';
+                document.getElementById('extraPayoffTime').textContent = '0 years';
+                document.getElementById('extraTotalInterest').textContent = '$0';
+                document.getElementById('effectiveRate').textContent = '0.0%';
+                document.getElementById('timeSaved').textContent = '0 years';
+                document.getElementById('interestSaved').textContent = '$0';
+                return;
+            }
+            
+            const monthlyRate = annualRate / 100 / 12;
+            const numPayments = loanTermYears * 12;
+            
+            // Calculate standard monthly payment
+            const monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                                 (Math.pow(1 + monthlyRate, numPayments) - 1);
+            
+            // Standard loan calculations
+            const standardTotalInterest = (monthlyPayment * numPayments) - loanAmount;
+            const standardPayoffMonths = numPayments;
+            
+            // Update standard loan display
+            document.getElementById('standardPayoffTime').textContent = formatMonthsToYears(standardPayoffMonths);
+            document.getElementById('standardTotalInterest').textContent = '$' + Math.round(standardTotalInterest).toLocaleString();
+            document.getElementById('standardRate').textContent = annualRate.toFixed(2) + '%';
+            
+            // Calculate with extra payments
+            const totalPayment = monthlyPayment + extraPayment;
+            document.getElementById('totalMonthlyPayment').textContent = '$' + Math.round(totalPayment).toLocaleString();
+            
+            const multiplier = monthlyPayment > 0 ? totalPayment / monthlyPayment : 1.0;
+            document.getElementById('paymentMultiplier').textContent = multiplier.toFixed(2) + 'x';
+            
+            // Simulate loan payoff with extra payments and lump sum
+            let balance = loanAmount;
+            let totalInterestWithExtra = 0;
+            let monthsWithExtra = 0;
+            
+            while (balance > 0 && monthsWithExtra < numPayments * 2) { // Safety limit
+                monthsWithExtra++;
+                
+                const interestPayment = balance * monthlyRate;
+                let principalPayment = totalPayment - interestPayment;
+                
+                // Apply lump sum payment at specified month
+                if (monthsWithExtra === lumpSumMonth && lumpSumAmount > 0) {
+                    principalPayment += lumpSumAmount;
+                }
+                
+                totalInterestWithExtra += interestPayment;
+                balance -= principalPayment;
+                
+                if (balance <= 0) break;
+            }
+            
+            // Update extra payment display
+            document.getElementById('extraPayoffTime').textContent = formatMonthsToYears(monthsWithExtra);
+            document.getElementById('extraTotalInterest').textContent = '$' + Math.round(totalInterestWithExtra).toLocaleString();
+            
+            // Calculate effective interest rate
+            // Method 1: Simple average annual interest cost as % of principal
+            const yearsWithExtra = monthsWithExtra / 12;
+            const averageAnnualInterest = totalInterestWithExtra / yearsWithExtra;
+            const simpleEffectiveRate = (averageAnnualInterest / loanAmount) * 100;
+            
+            // Method 2: More accurate - what rate on the original term would give this total interest
+            // We'll use the original loan term to make the comparison more meaningful
+            const effectiveAnnualRate = calculateEffectiveAnnualRate(loanAmount, totalInterestWithExtra, loanTermYears);
+            
+            // Use Method 2 as it's more accurate and comparable to the nominal rate
+            document.getElementById('effectiveRate').textContent = effectiveAnnualRate.toFixed(2) + '%';
+            
+            // Calculate savings
+            const monthsSaved = standardPayoffMonths - monthsWithExtra;
+            const interestSaved = standardTotalInterest - totalInterestWithExtra;
+            
+            document.getElementById('timeSaved').textContent = formatMonthsToYears(monthsSaved);
+            document.getElementById('interestSaved').textContent = '$' + Math.round(interestSaved).toLocaleString();
+            
+            // Update loan balance chart
+            updateLoanBalanceChart(loanAmount, monthlyRate, monthlyPayment, totalPayment, standardPayoffMonths, monthsWithExtra, lumpSumAmount, lumpSumMonth);
+        }
+        
+        function updateLoanBalanceChart(loanAmount, monthlyRate, standardPayment, extraPayment, standardMonths, extraMonths, lumpSumAmount, lumpSumMonth) {
+            const ctx = document.getElementById('loanBalanceChart').getContext('2d');
+            
+            // Generate data for both scenarios
+            const maxMonths = Math.max(standardMonths, extraMonths);
+            const months = [];
+            const standardBalances = [];
+            const extraBalances = [];
+            const standardInterest = [];
+            const extraInterest = [];
+            
+            // Calculate standard loan balance and cumulative interest over time
+            let standardBalance = loanAmount;
+            let standardCumulativeInterest = 0;
+            for (let month = 0; month <= maxMonths; month++) {
+                months.push(month);
+                standardBalances.push(Math.max(0, standardBalance));
+                standardInterest.push(standardCumulativeInterest);
+                
+                if (standardBalance > 0 && month < standardMonths) {
+                    const interest = standardBalance * monthlyRate;
+                    const principal = standardPayment - interest;
+                    standardBalance -= principal;
+                    standardCumulativeInterest += interest;
+                }
+            }
+            
+            // Calculate extra payment loan balance and cumulative interest over time (with lump sum)
+            let extraBalance = loanAmount;
+            let extraCumulativeInterest = 0;
+            for (let month = 0; month <= maxMonths; month++) {
+                extraBalances.push(Math.max(0, extraBalance));
+                extraInterest.push(extraCumulativeInterest);
+                
+                if (extraBalance > 0 && month < extraMonths) {
+                    const interest = extraBalance * monthlyRate;
+                    let principal = extraPayment - interest;
+                    
+                    // Apply lump sum payment at specified month
+                    if (month === lumpSumMonth && lumpSumAmount > 0) {
+                        principal += lumpSumAmount;
+                    }
+                    
+                    extraBalance -= principal;
+                    extraCumulativeInterest += interest;
+                }
+            }
+            
+            // Convert months to years for x-axis
+            const years = months.map(m => m / 12);
+            
+            if (loanBalanceChart) {
+                loanBalanceChart.destroy();
+            }
+            
+            loanBalanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: 'Standard Balance',
+                        data: standardBalances,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Extra Payment Balance',
+                        data: extraBalances,
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: extraBalances.map((_, i) => i === lumpSumMonth && lumpSumAmount > 0 ? 6 : 0),
+                        pointBackgroundColor: extraBalances.map((_, i) => i === lumpSumMonth && lumpSumAmount > 0 ? '#e67e22' : '#27ae60'),
+                        pointBorderColor: extraBalances.map((_, i) => i === lumpSumMonth && lumpSumAmount > 0 ? '#d35400' : '#27ae60'),
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Standard Interest Paid',
+                        data: standardInterest,
+                        borderColor: '#e67e22',
+                        backgroundColor: 'rgba(230, 126, 34, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Extra Payment Interest Paid',
+                        data: extraInterest,
+                        borderColor: '#16a085',
+                        backgroundColor: 'rgba(22, 160, 133, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        yAxisID: 'y'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                padding: 8,
+                                font: {
+                                    size: 11
+                                },
+                                usePointStyle: true,
+                                boxWidth: 6
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const years = tooltipItems[0].parsed.x;
+                                    const months = Math.round(years * 12);
+                                    const y = Math.floor(months / 12);
+                                    const m = months % 12;
+                                    
+                                    // Check if this is the lump sum month
+                                    if (months === lumpSumMonth && lumpSumAmount > 0) {
+                                        return `Month ${months} (${y}y ${m}m) 💰 LUMP SUM: $${Math.round(lumpSumAmount).toLocaleString()}`;
+                                    }
+                                    return `Month ${months} (${y}y ${m}m)`;
+                                },
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    return `${label}: $${Math.round(value).toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Years',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: 10
+                                },
+                                callback: function(value) {
+                                    return value.toFixed(0);
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Amount ($)',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: 10
+                                },
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        function calculateEffectiveAnnualRate(principal, totalInterest, years) {
+            // Calculate the effective rate using the actual interest paid and time period
+            // This approximates what the annual rate would be if we paid this much interest
+            // over this time period
+            
+            if (years <= 0 || principal <= 0) return 0;
+            
+            // Use iterative approach to find the rate that produces the observed interest
+            // Start with a reasonable guess and refine
+            let low = 0;
+            let high = 20; // Max 20% rate for search
+            let testRate = (low + high) / 2;
+            const tolerance = 0.01; // 0.01% accuracy
+            let iterations = 0;
+            const maxIterations = 50;
+            
+            while (iterations < maxIterations && (high - low) > tolerance) {
+                const monthlyRate = testRate / 100 / 12;
+                const numPayments = years * 12;
+                
+                // Calculate what monthly payment would be needed at this rate
+                const testPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                                   (Math.pow(1 + monthlyRate, numPayments) - 1);
+                
+                const testTotalInterest = (testPayment * numPayments) - principal;
+                
+                if (Math.abs(testTotalInterest - totalInterest) < 100) {
+                    // Close enough
+                    return testRate;
+                } else if (testTotalInterest > totalInterest) {
+                    // Test rate is too high
+                    high = testRate;
+                } else {
+                    // Test rate is too low
+                    low = testRate;
+                }
+                
+                testRate = (low + high) / 2;
+                iterations++;
+            }
+            
+            return testRate;
+        }
+        
+        function formatMonthsToYears(months) {
+            if (months === 0) return '0 years';
+            
+            const years = Math.floor(months / 12);
+            const remainingMonths = Math.round(months % 12);
+            
+            if (years === 0) {
+                return remainingMonths + ' month' + (remainingMonths !== 1 ? 's' : '');
+            } else if (remainingMonths === 0) {
+                return years + ' year' + (years !== 1 ? 's' : '');
+            } else {
+                return years + 'y ' + remainingMonths + 'm';
+            }
+        }
+        
+        function updateTargetRate(value) {
+            document.getElementById('targetRateValue').textContent = parseFloat(value).toFixed(2) + '%';
+            
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value) || 0;
+            const annualRate = parseFloat(document.getElementById('mortgageInterestRate').value) || 0;
+            const loanTermYears = parseInt(document.getElementById('loanTerm').value) || 30;
+            const targetRate = parseFloat(value) || 0;
+            
+            if (loanAmount <= 0 || annualRate <= 0) {
+                document.getElementById('targetRateWarning').style.display = 'none';
+                return;
+            }
+            
+            const monthlyRate = annualRate / 100 / 12;
+            const numPayments = loanTermYears * 12;
+            
+            // Calculate standard monthly payment
+            const standardPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                                   (Math.pow(1 + monthlyRate, numPayments) - 1);
+            
+            // Check if target rate is already higher than or equal to current rate
+            if (targetRate >= annualRate) {
+                document.getElementById('extraPayment').value = 0;
+                document.getElementById('extraPaymentValue').textContent = '$0';
+                document.getElementById('targetRateWarning').style.display = 'block';
+                document.getElementById('targetRateWarning').style.background = '#e3f2fd';
+                document.getElementById('targetRateWarning').style.borderLeft = '3px solid #2196f3';
+                
+                if (Math.abs(targetRate - annualRate) < 0.01) {
+                    // Exactly at nominal rate
+                    document.getElementById('targetRateWarning').querySelector('span').innerHTML = 
+                        '✓ This is your current nominal rate. No extra payments needed - this is the standard loan payment.';
+                    document.getElementById('targetRateWarning').querySelector('span').style.color = '#1565c0';
+                } else {
+                    // Above nominal rate
+                    document.getElementById('targetRateWarning').querySelector('span').innerHTML = 
+                        '⚠️ Target rate is higher than your nominal rate. This is not achievable - you cannot make the loan more expensive by paying extra.';
+                    document.getElementById('targetRateWarning').querySelector('span').style.color = '#1565c0';
+                }
+                calculateEffectiveRate();
+                return;
+            }
+            
+            // Calculate target total interest based on effective rate
+            const targetMonthlyRate = targetRate / 100 / 12;
+            const targetPayment = loanAmount * (targetMonthlyRate * Math.pow(1 + targetMonthlyRate, numPayments)) / 
+                                (Math.pow(1 + targetMonthlyRate, numPayments) - 1);
+            const targetTotalInterest = (targetPayment * numPayments) - loanAmount;
+            
+            // Use binary search to find the required extra payment
+            let low = 0;
+            let high = loanAmount; // Maximum reasonable extra payment
+            let requiredExtraPayment = 0;
+            const tolerance = 1; // $1 tolerance
+            let iterations = 0;
+            const maxIterations = 100;
+            
+            while (iterations < maxIterations && (high - low) > tolerance) {
+                const testExtra = (low + high) / 2;
+                const testPayment = standardPayment + testExtra;
+                
+                // Simulate loan with this payment
+                let balance = loanAmount;
+                let totalInterest = 0;
+                let months = 0;
+                
+                while (balance > 0 && months < numPayments * 2) {
+                    const interestPayment = balance * monthlyRate;
+                    const principalPayment = testPayment - interestPayment;
+                    
+                    if (principalPayment <= 0) {
+                        totalInterest = Infinity;
+                        break;
+                    }
+                    
+                    totalInterest += interestPayment;
+                    balance -= principalPayment;
+                    months++;
+                    
+                    if (balance <= 0) break;
+                }
+                
+                if (Math.abs(totalInterest - targetTotalInterest) < 100) {
+                    requiredExtraPayment = testExtra;
+                    break;
+                } else if (totalInterest > targetTotalInterest) {
+                    // Need higher payment to reduce interest
+                    low = testExtra;
+                } else {
+                    // Payment is too high
+                    high = testExtra;
+                }
+                
+                requiredExtraPayment = testExtra;
+                iterations++;
+            }
+            
+            // Check if target is achievable
+            const maxExtraPayment = parseFloat(document.getElementById('extraPayment').max) || 3000;
+            
+            if (requiredExtraPayment >= loanAmount || iterations >= maxIterations) {
+                document.getElementById('targetRateWarning').style.display = 'block';
+                document.getElementById('targetRateWarning').style.background = '#fff3cd';
+                document.getElementById('targetRateWarning').style.borderLeft = '3px solid #ffc107';
+                document.getElementById('targetRateWarning').querySelector('span').innerHTML = 
+                    '⚠️ Target rate is too low to achieve with reasonable monthly payments. Try a higher target rate.';
+                document.getElementById('targetRateWarning').querySelector('span').style.color = '#856404';
+                return;
+            }
+            
+            if (requiredExtraPayment > maxExtraPayment) {
+                document.getElementById('targetRateWarning').style.display = 'block';
+                document.getElementById('targetRateWarning').style.background = '#fff3cd';
+                document.getElementById('targetRateWarning').style.borderLeft = '3px solid #ffc107';
+                document.getElementById('targetRateWarning').querySelector('span').innerHTML = 
+                    `⚠️ Required extra payment ($${Math.round(requiredExtraPayment).toLocaleString()}) exceeds slider maximum. Increase the slider range or choose a higher target rate.`;
+                document.getElementById('targetRateWarning').querySelector('span').style.color = '#856404';
+                // Set to max and let user know
+                document.getElementById('extraPayment').value = maxExtraPayment;
+                document.getElementById('extraPaymentValue').textContent = '$' + Math.round(maxExtraPayment).toLocaleString();
+            } else {
+                // Update the extra payment slider to match the target
+                const roundedExtra = Math.round(requiredExtraPayment / 50) * 50; // Round to nearest $50
+                document.getElementById('extraPayment').value = roundedExtra;
+                document.getElementById('extraPaymentValue').textContent = '$' + Math.round(roundedExtra).toLocaleString();
+                document.getElementById('targetRateWarning').style.display = 'none';
+            }
+            
+            // Recalculate with the new extra payment
+            calculateEffectiveRate();
         }
         
         function copyToMortgageFields() {
@@ -1111,7 +1750,7 @@
         // Initialize on page load
         window.onload = function() {
             updateAppreciationFromValues(); // Calculate and set appreciation rate first
-            calculateMortgage(); // Initialize mortgage calculator
+            calculateMortgage(); // Initialize mortgage calculator and effective rate
         };
     </script>
 </body>
