@@ -649,7 +649,7 @@
                         <label for="lumpSumMonth">Payment Month <span class="tooltip">ℹ️
                             <span class="tooltiptext">The month number when you'll make this lump sum payment (e.g., month 12 = 1 year, month 60 = 5 years).</span>
                         </span></label>
-                        <input type="number" id="lumpSumMonth" value="12" min="1" max="360" onchange="calculateEffectiveRate()" placeholder="e.g., 12">
+                        <input type="number" id="lumpSumMonth" value="12" min="1" max="360" onchange="calculateEffectiveRate()" oninput="calculateEffectiveRate()" placeholder="e.g., 12">
                     </div>
                 </div>
                 
@@ -936,6 +936,14 @@
             // Use Method 2 as it's more accurate and comparable to the nominal rate
             document.getElementById('effectiveRate').textContent = effectiveAnnualRate.toFixed(2) + '%';
             
+            // Update the target rate slider to match the calculated effective rate
+            const targetRateSlider = document.getElementById('targetRate');
+            const targetRateValue = document.getElementById('targetRateValue');
+            if (targetRateSlider && targetRateValue) {
+                targetRateSlider.value = effectiveAnnualRate.toFixed(2);
+                targetRateValue.textContent = effectiveAnnualRate.toFixed(2) + '%';
+            }
+            
             // Calculate savings
             const monthsSaved = standardPayoffMonths - monthsWithExtra;
             const interestSaved = standardTotalInterest - totalInterestWithExtra;
@@ -1012,6 +1020,7 @@
                         borderColor: '#e74c3c',
                         backgroundColor: 'rgba(231, 76, 60, 0.1)',
                         borderWidth: 2,
+                        borderDash: [], // Explicitly set as solid line
                         fill: false,
                         tension: 0.1,
                         pointRadius: 0,
@@ -1069,8 +1078,9 @@
                                 font: {
                                     size: 11
                                 },
-                                usePointStyle: true,
-                                boxWidth: 6
+                                usePointStyle: false,
+                                boxWidth: 20,
+                                boxHeight: 2
                             }
                         },
                         tooltip: {
