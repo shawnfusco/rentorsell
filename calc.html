@@ -338,6 +338,7 @@
         <button class="tab-button active" onclick="switchTab('mortgage')">🏦 Mortgage Calculator</button>
         <button class="tab-button" onclick="switchTab('rent-sell')">🏘️ Rent or Sell</button>
         <button class="tab-button" onclick="switchTab('strategy')">💰 Payment Strategy</button>
+        <button class="tab-button" onclick="switchTab('loan-compare')">⚖️ Loan Comparison</button>
     </div>
 
     <!-- Tab 1: Rent or Sell -->
@@ -1073,6 +1074,145 @@
                 <strong>Key Insight:</strong> The longer the loan term, the more inflation helps borrowers. Strategy A (30 years) vs Strategy B (shorter term) - inflation benefits the longer loan more, which can change the comparison significantly.
             </div>
         </div>
+    </div>
+    </div>
+
+    <!-- Tab 4: Loan Comparison -->
+    <div id="loan-compare" class="tab-content">
+    <div class="container" style="margin-top: 30px;">
+        <h1 class="page-title">⚖️ Loan Comparison</h1>
+        <div style="text-align: center; margin-bottom: 25px; color: #7f8c8d; font-style: italic;">
+            Compare two different loan scenarios side by side
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 3fr 1fr; gap: 20px;">
+            <!-- Loan A Column -->
+            <div class="control-panel" style="border-left: 4px solid #3498db;">
+                <h3 style="color: #3498db;">🏠 Loan A</h3>
+                
+                <div class="input-group">
+                    <label for="loanAAmount">Loan Amount ($)</label>
+                    <input type="number" id="loanAAmount" value="428000" min="0" step="10000" oninput="calculateLoanComparison()">
+                </div>
+                
+                <div class="input-group">
+                    <label for="loanARate">Interest Rate: <span id="loanARateValue">5.375</span>%</label>
+                    <input type="range" id="loanARate" value="5.375" min="0" max="8" step="0.125" oninput="document.getElementById('loanARateValue').textContent = this.value; document.getElementById('loanATargetRate').value = this.value; document.getElementById('loanATargetRateValue').textContent = this.value; calculateLoanComparison()">
+                </div>
+                
+                <div class="input-group">
+                    <label for="loanATerm">Loan Term: <span id="loanATermValue">30</span> years</label>
+                    <input type="range" id="loanATerm" value="30" min="1" max="30" step="1" oninput="document.getElementById('loanATermValue').textContent = this.value; calculateLoanComparison()">
+                </div>
+                
+                <div class="input-group">
+                    <label for="loanAExtraPayment">Extra Monthly Payment: $<span id="loanAExtraPaymentValue">0</span></label>
+                    <input type="range" id="loanAExtraPayment" value="0" min="0" max="2000" step="50" oninput="document.getElementById('loanAExtraPaymentValue').textContent = parseInt(this.value).toLocaleString(); updateTargetRateFromExtraPayment('A')">
+                </div>
+                
+                <div class="input-group">
+                    <label for="loanATargetRate">Target Effective Rate: <span id="loanATargetRateValue">5.375</span>%</label>
+                    <input type="range" id="loanATargetRate" value="5.375" min="0" max="8" step="0.125" oninput="document.getElementById('loanATargetRateValue').textContent = this.value; adjustExtraPaymentForTargetRate('A')">
+                </div>
+                
+                <!-- Loan A Results -->
+                <div style="margin-top: 20px; background: #e3f2fd; padding: 12px; border-radius: 5px; border: 2px solid #3498db;">
+                    <div style="text-align: center; margin-bottom: 8px; color: #3498db; font-size: 12px; font-weight: bold;">📊 LOAN A DETAILS</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Monthly Payment:</span>
+                        <span id="loanAMonthlyPayment" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Payoff Time:</span>
+                        <span id="loanAPayoffTime" style="font-weight: bold;">0 years</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Total Principal:</span>
+                        <span id="loanATotalPrincipal" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Total Interest:</span>
+                        <span id="loanATotalInterest" style="font-weight: bold; color: #e74c3c;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Total Amount Paid:</span>
+                        <span id="loanATotalAmount" style="font-weight: bold; font-size: 14px;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-size: 12px;">Effective Rate:</span>
+                        <span id="loanAEffectiveRate" style="font-weight: bold; font-size: 14px; color: #3498db;">0.0%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chart Column -->
+            <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #3498db;">
+                <h4 style="margin-top: 0; color: #2c3e50; font-size: 14px;">📈 Loan Balance Over Time</h4>
+                <div style="position: relative; height: 600px;">
+                    <canvas id="loanComparisonChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Loan B Column -->
+            <div class="control-panel" style="border-left: 4px solid #e67e22;">
+                <h3 style="color: #e67e22;">🏠 Loan B</h3>
+                
+                <div class="input-group">
+                    <label for="loanBAmount">Loan Amount ($)</label>
+                    <input type="number" id="loanBAmount" value="428000" min="0" step="10000" oninput="calculateLoanComparison()">
+                </div>
+                
+                <div class="input-group">
+                    <label for="loanBRate">Interest Rate: <span id="loanBRateValue">5.375</span>%</label>
+                    <input type="range" id="loanBRate" value="5.375" min="0" max="8" step="0.125" oninput="document.getElementById('loanBRateValue').textContent = this.value; document.getElementById('loanBTargetRate').value = this.value; document.getElementById('loanBTargetRateValue').textContent = this.value; calculateLoanComparison()">
+                </div>
+                
+                <div class="input-group">
+                    <label for="loanBTerm">Loan Term: <span id="loanBTermValue">30</span> years</label>
+                    <input type="range" id="loanBTerm" value="30" min="1" max="30" step="1" oninput="document.getElementById('loanBTermValue').textContent = this.value; calculateLoanComparison()">
+                </div>
+                
+                <div class="input-group">
+                    <label for="loanBExtraPayment">Extra Monthly Payment: $<span id="loanBExtraPaymentValue">0</span></label>
+                    <input type="range" id="loanBExtraPayment" value="0" min="0" max="2000" step="50" oninput="document.getElementById('loanBExtraPaymentValue').textContent = parseInt(this.value).toLocaleString(); updateTargetRateFromExtraPayment('B')">
+                </div>
+                
+                <div class="input-group">
+                    <label for="loanBTargetRate">Target Effective Rate: <span id="loanBTargetRateValue">5.375</span>%</label>
+                    <input type="range" id="loanBTargetRate" value="5.375" min="0" max="8" step="0.125" oninput="document.getElementById('loanBTargetRateValue').textContent = this.value; adjustExtraPaymentForTargetRate('B')">
+                </div>
+                
+                <!-- Loan B Results -->
+                <div style="margin-top: 20px; background: #fff3e0; padding: 12px; border-radius: 5px; border: 2px solid #e67e22;">
+                    <div style="text-align: center; margin-bottom: 8px; color: #e67e22; font-size: 12px; font-weight: bold;">📊 LOAN B DETAILS</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Monthly Payment:</span>
+                        <span id="loanBMonthlyPayment" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Payoff Time:</span>
+                        <span id="loanBPayoffTime" style="font-weight: bold;">0 years</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Total Principal:</span>
+                        <span id="loanBTotalPrincipal" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Total Interest:</span>
+                        <span id="loanBTotalInterest" style="font-weight: bold; color: #e74c3c;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 12px;">Total Amount Paid:</span>
+                        <span id="loanBTotalAmount" style="font-weight: bold; font-size: 14px;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-size: 12px;">Effective Rate:</span>
+                        <span id="loanBEffectiveRate" style="font-weight: bold; font-size: 14px; color: #e67e22;">0.0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     </div>
 
     <script>
@@ -2707,6 +2847,407 @@
             );
         }
         
+        // Loan Comparison Calculator
+        function calculateLoanComparison() {
+            // Loan A inputs
+            const loanAAmount = parseFloat(document.getElementById('loanAAmount').value) || 0;
+            const loanARate = parseFloat(document.getElementById('loanARate').value) || 0;
+            const loanATerm = parseInt(document.getElementById('loanATerm').value) || 30;
+            const loanAExtraPayment = parseFloat(document.getElementById('loanAExtraPayment').value) || 0;
+            const loanATargetRate = parseFloat(document.getElementById('loanATargetRate').value) || 0;
+            
+            // Loan B inputs
+            const loanBAmount = parseFloat(document.getElementById('loanBAmount').value) || 0;
+            const loanBRate = parseFloat(document.getElementById('loanBRate').value) || 0;
+            const loanBTerm = parseInt(document.getElementById('loanBTerm').value) || 30;
+            const loanBExtraPayment = parseFloat(document.getElementById('loanBExtraPayment').value) || 0;
+            const loanBTargetRate = parseFloat(document.getElementById('loanBTargetRate').value) || 0;
+            
+            // Calculate Loan A
+            const loanAResults = calculateLoanDetails(loanAAmount, loanARate, loanATerm, loanAExtraPayment);
+            
+            // Calculate Loan B
+            const loanBResults = calculateLoanDetails(loanBAmount, loanBRate, loanBTerm, loanBExtraPayment);
+            
+            // Update displays
+            updateLoanDisplay('A', loanAResults);
+            updateLoanDisplay('B', loanBResults);
+            
+            // Update comparison chart
+            updateLoanComparisonChart(loanAResults, loanBResults);
+        }
+        
+        function calculateLoanDetails(principal, annualRate, termYears, extraPayment) {
+            if (principal <= 0 || annualRate <= 0) {
+                return {
+                    monthlyPayment: 0,
+                    totalPayment: 0,
+                    payoffMonths: 0,
+                    totalInterest: 0,
+                    effectiveRate: 0,
+                    principal: 0,
+                    totalAmount: 0
+                };
+            }
+            
+            const monthlyRate = annualRate / 100 / 12;
+            const numPayments = termYears * 12;
+            
+            // Calculate standard monthly payment
+            const monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                                 (Math.pow(1 + monthlyRate, numPayments) - 1);
+            
+            const totalPayment = monthlyPayment + extraPayment;
+            
+            // Simulate payoff with extra payments
+            let balance = principal;
+            let totalInterest = 0;
+            let months = 0;
+            
+            while (balance > 0 && months < numPayments * 2) {
+                months++;
+                const interestPayment = balance * monthlyRate;
+                const principalPayment = totalPayment - interestPayment;
+                
+                totalInterest += interestPayment;
+                balance -= principalPayment;
+                
+                if (balance <= 0) break;
+            }
+            
+            const totalAmount = principal + totalInterest;
+            const effectiveRate = calculateEffectiveAnnualRate(principal, totalInterest, termYears);
+            
+            return {
+                monthlyPayment: monthlyPayment,
+                totalPayment: totalPayment,
+                payoffMonths: months,
+                totalInterest: totalInterest,
+                effectiveRate: effectiveRate,
+                principal: principal,
+                totalAmount: totalAmount
+            };
+        }
+        
+        function updateLoanDisplay(loan, results) {
+            const prefix = 'loan' + loan;
+            document.getElementById(prefix + 'PayoffTime').textContent = formatMonthsToYears(results.payoffMonths);
+            document.getElementById(prefix + 'TotalPrincipal').textContent = '$' + Math.round(results.principal).toLocaleString();
+            document.getElementById(prefix + 'TotalInterest').textContent = '$' + Math.round(results.totalInterest).toLocaleString();
+            document.getElementById(prefix + 'TotalAmount').textContent = '$' + Math.round(results.totalAmount).toLocaleString();
+            document.getElementById(prefix + 'EffectiveRate').textContent = results.effectiveRate.toFixed(2) + '%';
+            document.getElementById(prefix + 'MonthlyPayment').textContent = '$' + Math.round(results.totalPayment).toLocaleString();
+        }
+        
+        function adjustExtraPaymentForTargetRate(loan) {
+            const loanAmount = parseFloat(document.getElementById('loan' + loan + 'Amount').value) || 0;
+            const annualRate = parseFloat(document.getElementById('loan' + loan + 'Rate').value) || 0;
+            const loanTerm = parseInt(document.getElementById('loan' + loan + 'Term').value) || 30;
+            const targetRate = parseFloat(document.getElementById('loan' + loan + 'TargetRate').value) || 0;
+            
+            if (loanAmount <= 0 || annualRate <= 0 || targetRate >= annualRate) {
+                // If target rate is higher than or equal to actual rate, no extra payment needed
+                document.getElementById('loan' + loan + 'ExtraPayment').value = 0;
+                document.getElementById('loan' + loan + 'ExtraPaymentValue').textContent = '0';
+                calculateLoanComparison();
+                return;
+            }
+            
+            // Binary search to find the extra payment that achieves the target rate
+            let low = 0;
+            let high = 2000;
+            let bestExtraPayment = 0;
+            const tolerance = 0.01; // Within 0.01% of target
+            
+            for (let i = 0; i < 50; i++) { // Max 50 iterations
+                const mid = (low + high) / 2;
+                const results = calculateLoanDetails(loanAmount, annualRate, loanTerm, mid);
+                
+                if (Math.abs(results.effectiveRate - targetRate) < tolerance) {
+                    bestExtraPayment = mid;
+                    break;
+                }
+                
+                if (results.effectiveRate > targetRate) {
+                    low = mid;
+                } else {
+                    high = mid;
+                }
+                
+                bestExtraPayment = mid;
+            }
+            
+            // Round to nearest 10
+            bestExtraPayment = Math.round(bestExtraPayment / 10) * 10;
+            bestExtraPayment = Math.min(2000, Math.max(0, bestExtraPayment));
+            
+            // Update the slider
+            document.getElementById('loan' + loan + 'ExtraPayment').value = bestExtraPayment;
+            document.getElementById('loan' + loan + 'ExtraPaymentValue').textContent = bestExtraPayment.toLocaleString();
+            
+            calculateLoanComparison();
+        }
+        
+        function updateTargetRateFromExtraPayment(loan) {
+            const loanAmount = parseFloat(document.getElementById('loan' + loan + 'Amount').value) || 0;
+            const annualRate = parseFloat(document.getElementById('loan' + loan + 'Rate').value) || 0;
+            const loanTerm = parseInt(document.getElementById('loan' + loan + 'Term').value) || 30;
+            const extraPayment = parseFloat(document.getElementById('loan' + loan + 'ExtraPayment').value) || 0;
+            
+            // Calculate the effective rate with this extra payment
+            const results = calculateLoanDetails(loanAmount, annualRate, loanTerm, extraPayment);
+            
+            // Update the target rate slider to match
+            document.getElementById('loan' + loan + 'TargetRate').value = results.effectiveRate.toFixed(3);
+            document.getElementById('loan' + loan + 'TargetRateValue').textContent = results.effectiveRate.toFixed(2);
+            
+            calculateLoanComparison();
+        }
+        
+        let loanComparisonChart = null;
+        
+        function updateLoanComparisonChart(loanAResults, loanBResults) {
+            const ctx = document.getElementById('loanComparisonChart');
+            if (!ctx) return;
+            
+            const monthlyRateA = (parseFloat(document.getElementById('loanARate').value) || 0) / 100 / 12;
+            const monthlyRateB = (parseFloat(document.getElementById('loanBRate').value) || 0) / 100 / 12;
+            const extraPaymentA = parseFloat(document.getElementById('loanAExtraPayment').value) || 0;
+            const extraPaymentB = parseFloat(document.getElementById('loanBExtraPayment').value) || 0;
+            
+            // Generate loan balance data over time
+            const maxMonths = Math.max(loanAResults.payoffMonths, loanBResults.payoffMonths);
+            const months = [];
+            const loanABalances = [];
+            const loanBBalances = [];
+            const loanAInterest = [];
+            const loanBInterest = [];
+            const loanATotal = [];
+            const loanBTotal = [];
+            
+            let balanceA = loanAResults.principal;
+            let balanceB = loanBResults.principal;
+            let cumulativeInterestA = 0;
+            let cumulativeInterestB = 0;
+            let cumulativePrincipalA = 0;
+            let cumulativePrincipalB = 0;
+            
+            for (let month = 0; month <= maxMonths; month++) {
+                months.push(month);
+                loanABalances.push(Math.max(0, balanceA));
+                loanBBalances.push(Math.max(0, balanceB));
+                loanAInterest.push(cumulativeInterestA);
+                loanBInterest.push(cumulativeInterestB);
+                loanATotal.push(cumulativeInterestA + cumulativePrincipalA);
+                loanBTotal.push(cumulativeInterestB + cumulativePrincipalB);
+                
+                if (balanceA > 0 && month < loanAResults.payoffMonths) {
+                    const interest = balanceA * monthlyRateA;
+                    const principal = loanAResults.totalPayment - interest;
+                    balanceA -= principal;
+                    cumulativeInterestA += interest;
+                    cumulativePrincipalA += principal;
+                }
+                
+                if (balanceB > 0 && month < loanBResults.payoffMonths) {
+                    const interest = balanceB * monthlyRateB;
+                    const principal = loanBResults.totalPayment - interest;
+                    balanceB -= principal;
+                    cumulativeInterestB += interest;
+                    cumulativePrincipalB += principal;
+                }
+            }
+            
+            if (loanComparisonChart) {
+                loanComparisonChart.destroy();
+            }
+            
+            loanComparisonChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Loan A Balance',
+                        data: loanABalances,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Loan A Interest',
+                        data: loanAInterest,
+                        borderColor: '#2980b9',
+                        backgroundColor: 'rgba(41, 128, 185, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Loan A Total',
+                        data: loanATotal,
+                        borderColor: '#5dade2',
+                        backgroundColor: 'rgba(93, 173, 226, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [2, 2],
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Loan B Balance',
+                        data: loanBBalances,
+                        borderColor: '#e67e22',
+                        backgroundColor: 'rgba(230, 126, 34, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Loan B Interest',
+                        data: loanBInterest,
+                        borderColor: '#d35400',
+                        backgroundColor: 'rgba(211, 84, 0, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Loan B Total',
+                        data: loanBTotal,
+                        borderColor: '#f39c12',
+                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [2, 2],
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        yAxisID: 'y'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                padding: 8,
+                                font: {
+                                    size: 11
+                                },
+                                usePointStyle: false,
+                                boxWidth: 20,
+                                boxHeight: 2
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const months = Math.round(tooltipItems[0].parsed.x);
+                                    const y = Math.floor(months / 12);
+                                    const m = months % 12;
+                                    return `Month ${months} (${y}y ${m}m)`;
+                                },
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    return `${label}: $${Math.round(value).toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Months',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: 10
+                                },
+                                callback: function(value) {
+                                    return Math.round(value);
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Amount ($)',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: 10
+                                },
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                },
+                plugins: [{
+                    afterDatasetsDraw: function(chart) {
+                        const ctx = chart.ctx;
+                        chart.data.datasets.forEach((dataset, i) => {
+                            const meta = chart.getDatasetMeta(i);
+                            if (!meta.hidden && meta.data.length > 0) {
+                                const lastPoint = meta.data[meta.data.length - 1];
+                                const lastValue = dataset.data[dataset.data.length - 1];
+                                
+                                // Only show label if value is greater than 0
+                                if (lastValue > 0 && lastPoint) {
+                                    ctx.save();
+                                    ctx.font = 'bold 10px Arial';
+                                    ctx.fillStyle = dataset.borderColor;
+                                    ctx.textAlign = 'right';
+                                    const label = '$' + Math.round(lastValue / 1000) + 'k';
+                                    ctx.fillText(label, lastPoint.x - 5, lastPoint.y + 12);
+                                    ctx.restore();
+                                }
+                            }
+                        });
+                    }
+                }]
+            });
+        }
+        
         // Tab switching function
         function switchTab(tabName) {
             // Hide all tab contents
@@ -2733,6 +3274,7 @@
             updateAppreciationFromValues(); // Calculate and set appreciation rate first
             calculateMortgage(); // Initialize mortgage calculator and effective rate
             calculateStrategyComparison(); // Initialize strategy comparison
+            calculateLoanComparison(); // Initialize loan comparison
         };
     </script>
     </div>
