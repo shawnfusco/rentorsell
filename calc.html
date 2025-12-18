@@ -692,12 +692,12 @@
                 </div>
                 
                 <div style="margin: 20px 0; border-top: 2px solid #e0e0e0; padding-top: 15px;">
-                    <div style="font-weight: bold; margin-bottom: 10px; color: #e67e22; font-size: 14px;">💵 One-Time Lump Sum Payment</div>
+                    <div style="font-weight: bold; margin-bottom: 10px; color: #e67e22; font-size: 14px;">💵 One-Time Lump Sum Payments</div>
                     <div class="input-group">
                         <label for="lumpSumAmount">Lump Sum Amount ($) <span class="tooltip">ℹ️
                             <span class="tooltiptext">A one-time extra payment you plan to make towards principal at a specific month.</span>
                         </span></label>
-                        <input type="number" id="lumpSumAmount" value="0" min="0" step="1000" onchange="calculateEffectiveRate()" placeholder="e.g., 10000">
+                        <input type="number" id="lumpSumAmount" value="0" min="0" step="1000" oninput="checkAddLumpSum()" placeholder="e.g., 10000">
                     </div>
                     <div class="input-group" style="margin-top: 10px;">
                         <label for="lumpSumMonth">Payment Month <span class="tooltip">ℹ️
@@ -705,6 +705,7 @@
                         </span></label>
                         <input type="number" id="lumpSumMonth" value="12" min="1" max="360" onchange="calculateEffectiveRate()" oninput="calculateEffectiveRate()" placeholder="e.g., 12">
                     </div>
+                    <div id="additionalLumpSums"></div>
                 </div>
                 
                 <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
@@ -1180,13 +1181,88 @@
             }
         }
         
+        let lumpSumCounter = 0;
+        
+        function checkAddLumpSum() {
+            const lumpSumAmount = parseFloat(document.getElementById('lumpSumAmount').value) || 0;
+            const container = document.getElementById('additionalLumpSums');
+            
+            // If the first lump sum has a value and we haven't added additional fields yet
+            if (lumpSumAmount > 0 && container.children.length === 0) {
+                addLumpSumField();
+            }
+            
+            calculateEffectiveRate();
+        }
+        
+        function addLumpSumField() {
+            const container = document.getElementById('additionalLumpSums');
+            lumpSumCounter++;
+            
+            const newField = document.createElement('div');
+            newField.style.cssText = 'margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;';
+            newField.innerHTML = `
+                <div class="input-group">
+                    <label for="lumpSumAmount${lumpSumCounter}">Additional Lump Sum Amount ($) <span class="tooltip">ℹ️
+                        <span class="tooltiptext">Another one-time extra payment towards principal.</span>
+                    </span></label>
+                    <input type="number" id="lumpSumAmount${lumpSumCounter}" value="0" min="0" step="1000" oninput="checkAddAnotherLumpSum(${lumpSumCounter})" placeholder="e.g., 10000">
+                </div>
+                <div class="input-group" style="margin-top: 10px;">
+                    <label for="lumpSumMonth${lumpSumCounter}">Payment Month <span class="tooltip">ℹ️
+                        <span class="tooltiptext">The month number for this payment.</span>
+                    </span></label>
+                    <input type="number" id="lumpSumMonth${lumpSumCounter}" value="24" min="1" max="360" onchange="calculateEffectiveRate()" oninput="calculateEffectiveRate()" placeholder="e.g., 24">
+                </div>
+            `;
+            
+            container.appendChild(newField);
+        }
+        
+        function checkAddAnotherLumpSum(currentIndex) {
+            const currentAmount = parseFloat(document.getElementById(`lumpSumAmount${currentIndex}`).value) || 0;
+            const container = document.getElementById('additionalLumpSums');
+            
+            // If this field has a value and it's the last one, add another
+            if (currentAmount > 0 && currentIndex === lumpSumCounter) {
+                addLumpSumField();
+            }
+            
+            calculateEffectiveRate();
+        }
+        
+        function getAllLumpSums() {
+            const lumpSums = [];
+            
+            // Get the first lump sum
+            const amount = parseFloat(document.getElementById('lumpSumAmount').value) || 0;
+            const month = parseInt(document.getElementById('lumpSumMonth').value) || 12;
+            if (amount > 0) {
+                lumpSums.push({ amount, month });
+            }
+            
+            // Get additional lump sums
+            for (let i = 1; i <= lumpSumCounter; i++) {
+                const amountEl = document.getElementById(`lumpSumAmount${i}`);
+                const monthEl = document.getElementById(`lumpSumMonth${i}`);
+                if (amountEl && monthEl) {
+                    const amt = parseFloat(amountEl.value) || 0;
+                    const mon = parseInt(monthEl.value) || 12;
+                    if (amt > 0) {
+                        lumpSums.push({ amount: amt, month: mon });
+                    }
+                }
+            }
+            
+            return lumpSums;
+        }
+        
         function calculateEffectiveRate() {
             const loanAmount = parseFloat(document.getElementById('loanAmount').value) || 0;
             const annualRate = parseFloat(document.getElementById('mortgageInterestRate').value) || 0;
             const loanTermYears = parseInt(document.getElementById('loanTerm').value) || 30;
             const extraPayment = parseFloat(document.getElementById('extraPayment').value) || 0;
-            const lumpSumAmount = parseFloat(document.getElementById('lumpSumAmount').value) || 0;
-            const lumpSumMonth = parseInt(document.getElementById('lumpSumMonth').value) || 12;
+            const allLumpSums = getAllLumpSums();
             
             if (loanAmount <= 0 || annualRate <= 0) {
                 // Reset displays
@@ -1226,7 +1302,7 @@
             const multiplier = monthlyPayment > 0 ? totalPayment / monthlyPayment : 1.0;
             document.getElementById('paymentMultiplier').textContent = multiplier.toFixed(2) + 'x';
             
-            // Simulate loan payoff with extra payments and lump sum
+            // Simulate loan payoff with extra payments and lump sums
             let balance = loanAmount;
             let totalInterestWithExtra = 0;
             let monthsWithExtra = 0;
@@ -1237,9 +1313,11 @@
                 const interestPayment = balance * monthlyRate;
                 let principalPayment = totalPayment - interestPayment;
                 
-                // Apply lump sum payment at specified month
-                if (monthsWithExtra === lumpSumMonth && lumpSumAmount > 0) {
-                    principalPayment += lumpSumAmount;
+                // Apply lump sum payments at specified months
+                for (const lumpSum of allLumpSums) {
+                    if (monthsWithExtra === lumpSum.month) {
+                        principalPayment += lumpSum.amount;
+                    }
                 }
                 
                 totalInterestWithExtra += interestPayment;
@@ -1281,10 +1359,10 @@
             document.getElementById('interestSaved').textContent = '$' + Math.round(interestSaved).toLocaleString();
             
             // Update loan balance chart
-            updateLoanBalanceChart(loanAmount, monthlyRate, monthlyPayment, totalPayment, standardPayoffMonths, monthsWithExtra, lumpSumAmount, lumpSumMonth);
+            updateLoanBalanceChart(loanAmount, monthlyRate, monthlyPayment, totalPayment, standardPayoffMonths, monthsWithExtra, allLumpSums);
         }
         
-        function updateLoanBalanceChart(loanAmount, monthlyRate, standardPayment, extraPayment, standardMonths, extraMonths, lumpSumAmount, lumpSumMonth) {
+        function updateLoanBalanceChart(loanAmount, monthlyRate, standardPayment, extraPayment, standardMonths, extraMonths, allLumpSums) {
             const ctx = document.getElementById('loanBalanceChart').getContext('2d');
             
             // Generate data for both scenarios
@@ -1311,7 +1389,7 @@
                 }
             }
             
-            // Calculate extra payment loan balance and cumulative interest over time (with lump sum)
+            // Calculate extra payment loan balance and cumulative interest over time (with lump sums)
             let extraBalance = loanAmount;
             let extraCumulativeInterest = 0;
             for (let month = 0; month <= maxMonths; month++) {
@@ -1322,9 +1400,11 @@
                     const interest = extraBalance * monthlyRate;
                     let principal = extraPayment - interest;
                     
-                    // Apply lump sum payment at specified month
-                    if (month === lumpSumMonth && lumpSumAmount > 0) {
-                        principal += lumpSumAmount;
+                    // Apply lump sum payments at specified months
+                    for (const lumpSum of allLumpSums) {
+                        if (month === lumpSum.month) {
+                            principal += lumpSum.amount;
+                        }
                     }
                     
                     extraBalance -= principal;
