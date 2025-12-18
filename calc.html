@@ -731,9 +731,281 @@
         </div>
     </div>
 
+    <!-- Down Payment vs Extra Payment Strategy Calculator -->
+    <div class="container" style="margin-top: 30px;">
+        <h1 class="page-title">💰 Down Payment vs Extra Payment Strategy w/Interest Rate Buydown</h1>
+        <div style="text-align: center; margin-bottom: 25px; color: #7f8c8d; font-style: italic;">
+            Compare putting more money down vs keeping cash for extra monthly payments
+        </div>
+
+        <!-- Strategy Comparison Charts -->
+        <div style="margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #3498db;">
+            <div style="background: white; padding: 15px; border-radius: 8px;">
+                <h4 style="margin-top: 0; color: #2c3e50; font-size: 14px;">📉 Loan Balance Over Time</h4>
+                <canvas id="strategyBalanceChart" style="max-height: 250px;"></canvas>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 8px;">
+                <h4 style="margin-top: 0; color: #2c3e50; font-size: 14px;">💰 Cumulative Cost (Today's $)</h4>
+                <canvas id="strategyCostChart" style="max-height: 250px;"></canvas>
+            </div>
+        </div>
+
+        <div class="controls-grid">
+            <!-- Strategy Inputs -->
+            <div class="control-panel" style="border-left: 4px solid #9b59b6;">
+                <h3>🎯 Strategy Comparison Inputs</h3>
+                
+                <div class="control-section">
+                    <div class="input-group">
+                        <label for="strategyHomePrice">Home Purchase Price ($)</label>
+                        <input type="number" id="strategyHomePrice" value="428000" min="0" step="1000" oninput="calculateStrategyComparison()" placeholder="e.g., 428000">
+                    </div>
+                    <div class="input-group">
+                        <label for="strategyInterestRate">Interest Rate (%)</label>
+                        <input type="number" id="strategyInterestRate" value="5.35" min="0" max="20" step="0.01" oninput="calculateStrategyComparison()" placeholder="e.g., 5.35">
+                    </div>
+                    <div class="input-group">
+                        <label for="strategyLoanTerm">Loan Term (years)</label>
+                        <input type="number" id="strategyLoanTerm" value="30" min="10" max="40" step="1" oninput="calculateStrategyComparison()" placeholder="e.g., 30">
+                    </div>
+                    <div class="input-group">
+                        <label for="availableCash">Available Extra Cash ($) <span class="tooltip">ℹ️
+                            <span class="tooltiptext">The additional money you have to either put down or use for extra payments</span>
+                        </span></label>
+                        <input type="number" id="availableCash" value="50000" min="0" step="1000" oninput="calculateStrategyComparison()" placeholder="e.g., 50000">
+                    </div>
+                    <div class="input-group">
+                        <label for="baseDownPayment">Base Down Payment ($) <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Your minimum down payment before using extra cash</span>
+                        </span></label>
+                        <input type="number" id="baseDownPayment" value="0" min="0" step="1000" oninput="calculateStrategyComparison()" placeholder="e.g., 0">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>Expected Inflation Rate (%) <span class="tooltip">ℹ️
+                                <span class="tooltiptext">Annual inflation rate to adjust future payments to today's purchasing power. Historical average is ~3%</span>
+                            </span></span>
+                            <span id="inflationRateValue">3.0%</span>
+                        </div>
+                        <input type="range" id="inflationRate" min="0" max="8" step="0.1" value="3.0" oninput="updateInflationRateDisplay(); calculateStrategyComparison()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strategy A Results -->
+            <div class="control-panel" style="border-left: 4px solid #e74c3c;">
+                <h3>🏠 Strategy A: Larger Down Payment</h3>
+                
+                <div style="background: #ffe6e6; padding: 10px; border-radius: 5px; margin-bottom: 8px;">
+                    <div style="font-weight: bold; color: #c0392b; margin-bottom: 6px; font-size: 12px;">🎚️ Rate Adjustment</div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span style="font-size: 11px;">Rate Adjustment (%):</span>
+                            <span id="strategyARateAdjustmentValue" style="font-size: 11px;">0.00%</span>
+                        </div>
+                        <input type="range" id="strategyARateAdjustment" min="-2" max="0" step="0.125" value="0" oninput="updateStrategyARateDisplay(); calculateStrategyComparison()">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span style="font-size: 11px;">Buydown Cost ($):</span>
+                            <span id="strategyABuydownCostValue" style="font-size: 11px;">$0</span>
+                        </div>
+                        <input type="range" id="strategyABuydownCost" min="0" max="20000" step="500" value="0" oninput="updateStrategyARateDisplay(); calculateStrategyComparison()">
+                    </div>
+                    <div style="font-size: 10px; color: #7f8c8d; margin-top: 4px; font-style: italic;">
+                        Adjusted Rate: <span id="strategyAEffectiveRate" style="font-weight: bold; color: #c0392b;">5.35%</span>
+                    </div>
+                </div>
+                
+                <div style="background: #fff5f5; padding: 12px; border-radius: 5px; margin-bottom: 12px;">
+                    <div style="font-weight: bold; color: #e74c3c; margin-bottom: 8px;">📊 Loan Details</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Nominal Interest Rate:</span>
+                        <span id="strategyAEffectiveRateDisplay" style="font-weight: bold; color: #7f8c8d;">5.35%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px; padding-bottom: 3px; border-bottom: 1px solid #dee2e6;">
+                        <span style="font-size: 12px; font-weight: bold;">Effective Interest Rate <span class="tooltip">ℹ️
+                            <span class="tooltiptext">The actual borrowing cost. For Strategy A without extra payments, this equals the nominal rate.</span>
+                        </span>:</span>
+                        <span id="strategyAActualEffectiveRate" style="font-weight: bold; color: #e74c3c; font-size: 14px;">5.35%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Down Payment:</span>
+                        <span id="strategyADownPayment" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Loan Amount:</span>
+                        <span id="strategyALoanAmount" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Base Monthly Payment:</span>
+                        <span id="strategyABasePayment" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Extra Monthly Payment:</span>
+                        <span id="strategyAExtraPayment" style="font-weight: bold; color: #7f8c8d;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-size: 12px;">Total Monthly Payment:</span>
+                        <span id="strategyATotalPayment" style="font-weight: bold;">$0</span>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 5px;">
+                    <div style="font-weight: bold; color: #2c3e50; margin-bottom: 5px;">💸 Total Costs</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Total Interest:</span>
+                        <span id="strategyATotalInterest" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Total Payments:</span>
+                        <span id="strategyATotalPayments" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Total Cost (Nominal):</span>
+                        <span id="strategyATotalCost" style="font-weight: bold; color: #e74c3c;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-top: 1px solid #dee2e6; padding-top: 3px;">
+                        <span style="font-size: 12px; font-weight: bold;">Total Cost (Today's $):</span>
+                        <span id="strategyATotalCostReal" style="font-weight: bold; color: #e74c3c;">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strategy B Results -->
+            <div class="control-panel" style="border-left: 4px solid #27ae60;">
+                <h3>💵 Strategy B: Extra Monthly Payments</h3>
+                
+                <div style="background: #e6ffe6; padding: 10px; border-radius: 5px; margin-bottom: 8px;">
+                    <div style="font-weight: bold; color: #1e7e34; margin-bottom: 6px; font-size: 12px;">🎚️ Rate Adjustment</div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span style="font-size: 11px;">Rate Adjustment (%):</span>
+                            <span id="strategyBRateAdjustmentValue" style="font-size: 11px;">0.00%</span>
+                        </div>
+                        <input type="range" id="strategyBRateAdjustment" min="-2" max="0" step="0.125" value="0" oninput="updateStrategyBRateDisplay(); calculateStrategyComparison()">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span style="font-size: 11px;">Buydown Cost ($):</span>
+                            <span id="strategyBBuydownCostValue" style="font-size: 11px;">$0</span>
+                        </div>
+                        <input type="range" id="strategyBBuydownCost" min="0" max="20000" step="500" value="0" oninput="updateStrategyBRateDisplay(); calculateStrategyComparison()">
+                    </div>
+                    <div style="font-size: 10px; color: #7f8c8d; margin-top: 4px; font-style: italic;">
+                        Adjusted Rate: <span id="strategyBEffectiveRate" style="font-weight: bold; color: #1e7e34;">5.35%</span>
+                    </div>
+                </div>
+                
+                <div style="background: #f8fff9; padding: 12px; border-radius: 5px; margin-bottom: 12px;">
+                    <div style="font-weight: bold; color: #27ae60; margin-bottom: 8px;">📊 Loan Details</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Nominal Interest Rate:</span>
+                        <span id="strategyBEffectiveRateDisplay" style="font-weight: bold; color: #7f8c8d;">5.35%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px; padding-bottom: 3px; border-bottom: 1px solid #dee2e6;">
+                        <span style="font-size: 12px; font-weight: bold;">Effective Interest Rate <span class="tooltip">ℹ️
+                            <span class="tooltiptext">The actual borrowing cost when making extra payments. Shows what rate would result in the same total interest on a standard loan.</span>
+                        </span>:</span>
+                        <span id="strategyBActualEffectiveRate" style="font-weight: bold; color: #27ae60; font-size: 14px;">5.35%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Down Payment:</span>
+                        <span id="strategyBDownPayment" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Loan Amount:</span>
+                        <span id="strategyBLoanAmount" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Base Monthly Payment:</span>
+                        <span id="strategyBBasePayment" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Extra Monthly Payment:</span>
+                        <span id="strategyBExtraPayment" style="font-weight: bold; color: #27ae60;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-size: 12px;">Total Monthly Payment:</span>
+                        <span id="strategyBTotalPayment" style="font-weight: bold;">$0</span>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 5px;">
+                    <div style="font-weight: bold; color: #2c3e50; margin-bottom: 5px;">💸 Total Costs</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Total Interest:</span>
+                        <span id="strategyBTotalInterest" style="font-weight: bold;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Payoff Time:</span>
+                        <span id="strategyBPayoffTime" style="font-weight: bold;">0 years</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="font-size: 12px;">Total Cost (Nominal):</span>
+                        <span id="strategyBTotalCost" style="font-weight: bold; color: #27ae60;">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-top: 1px solid #dee2e6; padding-top: 3px;">
+                        <span style="font-size: 12px; font-weight: bold;">Total Cost (Today's $):</span>
+                        <span id="strategyBTotalCostReal" style="font-weight: bold; color: #27ae60;">$0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Results -->
+        <div style="margin-top: 20px; background: #f8f9fa; border-radius: 10px; padding: 20px; border-left: 4px solid #3498db;">
+            <h3 style="color: #3498db; margin-top: 0;">🎯 Strategy Comparison Results</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+                <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">INTEREST DIFFERENCE</div>
+                    <div id="interestDifference" style="font-size: 18px; font-weight: bold;">$0</div>
+                    <div id="interestDifferenceNote" style="font-size: 11px; margin-top: 3px;"></div>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">TOTAL COST DIFFERENCE (Nominal)</div>
+                    <div id="totalCostDifference" style="font-size: 18px; font-weight: bold;">$0</div>
+                    <div id="totalCostDifferenceNote" style="font-size: 11px; margin-top: 3px;"></div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+                <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">REAL COST DIFFERENCE (Today's $)</div>
+                    <div id="realCostDifference" style="font-size: 18px; font-weight: bold;">$0</div>
+                    <div id="realCostDifferenceNote" style="font-size: 11px; margin-top: 3px;"></div>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">INFLATION IMPACT</div>
+                    <div id="inflationImpact" style="font-size: 18px; font-weight: bold;">$0</div>
+                    <div id="inflationImpactNote" style="font-size: 11px; margin-top: 3px;"></div>
+                </div>
+            </div>
+
+            <div id="strategyRecommendation" style="padding: 12px; border-radius: 8px; font-weight: bold; text-align: center;">
+                Enter values to see recommendation
+            </div>
+        </div>
+
+        <div style="margin-top: 15px; padding: 12px; background: #e3f2fd; border-radius: 5px; border-left: 4px solid #2196f3;">
+            <div style="font-weight: bold; margin-bottom: 5px; color: #1976d2;">📝 Strategy Notes & Inflation Impact</div>
+            <div style="font-size: 13px; color: #34495e; line-height: 1.5;">
+                <strong>Strategy A</strong> uses all extra cash as down payment for lower monthly payments.<br>
+                <strong>Strategy B</strong> keeps the minimum down payment and spreads extra cash over monthly payments.<br><br>
+                
+                <strong>💰 Inflation Consideration:</strong> Future payments are worth less than today's money. At 3% inflation, $1000 in year 30 only has the buying power of ~$400 today! This is why "Today's $" calculations are more meaningful - they show what everything costs in current purchasing power.<br><br>
+                
+                <strong>Key Insight:</strong> The longer the loan term, the more inflation helps borrowers. Strategy A (30 years) vs Strategy B (shorter term) - inflation benefits the longer loan more, which can change the comparison significantly.
+            </div>
+        </div>
+    </div>
+
     <script>
         let chart;
         let loanBalanceChart;
+        let strategyBalanceChart;
+        let strategyCostChart;
         
         function calculateAppreciationRate() {
             const currentValue = parseFloat(document.getElementById('currentValue').value) || 0;
@@ -1757,10 +2029,525 @@
             });
         }
         
+        function renderStrategyCharts(strategyAData, strategyBData) {
+            // Destroy existing charts if they exist
+            if (strategyBalanceChart) {
+                strategyBalanceChart.destroy();
+            }
+            if (strategyCostChart) {
+                strategyCostChart.destroy();
+            }
+
+            // Render Balance Chart
+            const balanceCtx = document.getElementById('strategyBalanceChart').getContext('2d');
+            strategyBalanceChart = new Chart(balanceCtx, {
+                type: 'line',
+                data: {
+                    labels: strategyAData.balanceMonths,
+                    datasets: [
+                        {
+                            label: 'Strategy A: Larger Down Payment',
+                            data: strategyAData.balances,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Strategy B: Extra Payments',
+                            data: strategyBData.balances,
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                font: { size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                title: function(context) {
+                                    const months = context[0].parsed.x;
+                                    const years = Math.floor(months / 12);
+                                    const remainingMonths = months % 12;
+                                    return `Year ${years}${remainingMonths > 0 ? `, Month ${remainingMonths}` : ''}`;
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += '$' + Math.round(context.parsed.y).toLocaleString();
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Months', font: { size: 11 } },
+                            ticks: { font: { size: 10 } }
+                        },
+                        y: {
+                            title: { display: true, text: 'Balance ($)', font: { size: 11 } },
+                            ticks: {
+                                font: { size: 10 },
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Render Cumulative Cost Chart
+            const costCtx = document.getElementById('strategyCostChart').getContext('2d');
+            strategyCostChart = new Chart(costCtx, {
+                type: 'line',
+                data: {
+                    labels: strategyAData.costMonths,
+                    datasets: [
+                        {
+                            label: 'Strategy A: Larger Down Payment',
+                            data: strategyAData.cumulativeCosts,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0,
+                            fill: true
+                        },
+                        {
+                            label: 'Strategy B: Extra Payments',
+                            data: strategyBData.cumulativeCosts,
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                font: { size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                title: function(context) {
+                                    const months = context[0].parsed.x;
+                                    const years = Math.floor(months / 12);
+                                    const remainingMonths = months % 12;
+                                    return `Year ${years}${remainingMonths > 0 ? `, Month ${remainingMonths}` : ''}`;
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += '$' + Math.round(context.parsed.y).toLocaleString();
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Months', font: { size: 11 } },
+                            ticks: { font: { size: 10 } }
+                        },
+                        y: {
+                            title: { display: true, text: 'Cumulative Cost (Today\'s $)', font: { size: 11 } },
+                            ticks: {
+                                font: { size: 10 },
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateStrategyARateDisplay() {
+            const rateAdjustment = parseFloat(document.getElementById('strategyARateAdjustment').value) || 0;
+            const buydownCost = parseFloat(document.getElementById('strategyABuydownCost').value) || 0;
+            const baseRate = parseFloat(document.getElementById('strategyInterestRate').value) || 0;
+            const adjustedRate = baseRate + rateAdjustment;
+            
+            document.getElementById('strategyARateAdjustmentValue').textContent = rateAdjustment.toFixed(3) + '%';
+            document.getElementById('strategyABuydownCostValue').textContent = '$' + Math.round(buydownCost).toLocaleString();
+            document.getElementById('strategyAEffectiveRate').textContent = adjustedRate.toFixed(3) + '%';
+            document.getElementById('strategyAEffectiveRateDisplay').textContent = adjustedRate.toFixed(3) + '%';
+        }
+        
+        function updateStrategyBRateDisplay() {
+            const rateAdjustment = parseFloat(document.getElementById('strategyBRateAdjustment').value) || 0;
+            const buydownCost = parseFloat(document.getElementById('strategyBBuydownCost').value) || 0;
+            const baseRate = parseFloat(document.getElementById('strategyInterestRate').value) || 0;
+            const adjustedRate = baseRate + rateAdjustment;
+            
+            document.getElementById('strategyBRateAdjustmentValue').textContent = rateAdjustment.toFixed(3) + '%';
+            document.getElementById('strategyBBuydownCostValue').textContent = '$' + Math.round(buydownCost).toLocaleString();
+            document.getElementById('strategyBEffectiveRate').textContent = adjustedRate.toFixed(3) + '%';
+            document.getElementById('strategyBEffectiveRateDisplay').textContent = adjustedRate.toFixed(3) + '%';
+        }
+        
+        function updateInflationRateDisplay() {
+            const inflationRate = parseFloat(document.getElementById('inflationRate').value) || 0;
+            document.getElementById('inflationRateValue').textContent = inflationRate.toFixed(1) + '%';
+        }
+        
+        function calculateStrategyEffectiveRate(principal, totalInterest, years) {
+            // Calculate the effective rate using the actual interest paid and time period
+            // This approximates what the annual rate would be if we paid this much interest
+            // over this time period
+            
+            if (years <= 0 || principal <= 0) return 0;
+            
+            // Use iterative approach to find the rate that produces the observed interest
+            let low = 0;
+            let high = 20; // Max 20% rate for search
+            let testRate = (low + high) / 2;
+            const tolerance = 0.01; // 0.01% accuracy
+            let iterations = 0;
+            const maxIterations = 50;
+            
+            while (iterations < maxIterations && (high - low) > tolerance) {
+                const monthlyRate = testRate / 100 / 12;
+                const numPayments = years * 12;
+                
+                // Calculate what monthly payment would be needed at this rate
+                const testPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                                   (Math.pow(1 + monthlyRate, numPayments) - 1);
+                
+                const testTotalInterest = (testPayment * numPayments) - principal;
+                
+                if (Math.abs(testTotalInterest - totalInterest) < 100) {
+                    // Close enough
+                    return testRate;
+                } else if (testTotalInterest > totalInterest) {
+                    // Test rate is too high
+                    high = testRate;
+                } else {
+                    // Test rate is too low
+                    low = testRate;
+                }
+                
+                testRate = (low + high) / 2;
+                iterations++;
+            }
+            
+            return testRate;
+        }
+
+        function calculateStrategyComparison() {
+            const homePrice = parseFloat(document.getElementById('strategyHomePrice').value) || 0;
+            const interestRate = parseFloat(document.getElementById('strategyInterestRate').value) || 0;
+            const loanTermYears = parseInt(document.getElementById('strategyLoanTerm').value) || 30;
+            const availableCash = parseFloat(document.getElementById('availableCash').value) || 0;
+            const baseDownPayment = parseFloat(document.getElementById('baseDownPayment').value) || 0;
+            const inflationRate = parseFloat(document.getElementById('inflationRate').value) || 3.0;
+            
+            if (homePrice <= 0 || interestRate <= 0 || availableCash <= 0) {
+                // Reset all displays
+                document.getElementById('strategyADownPayment').textContent = '$0';
+                document.getElementById('strategyALoanAmount').textContent = '$0';
+                document.getElementById('strategyAMonthlyPayment').textContent = '$0';
+                document.getElementById('strategyADownPercent').textContent = '0%';
+                document.getElementById('strategyATotalInterest').textContent = '$0';
+                document.getElementById('strategyATotalPayments').textContent = '$0';
+                document.getElementById('strategyATotalCost').textContent = '$0';
+                document.getElementById('strategyATotalCostReal').textContent = '$0';
+                
+                document.getElementById('strategyBDownPayment').textContent = '$0';
+                document.getElementById('strategyBLoanAmount').textContent = '$0';
+                document.getElementById('strategyBBasePayment').textContent = '$0';
+                document.getElementById('strategyBExtraPayment').textContent = '$0';
+                document.getElementById('strategyBTotalPayment').textContent = '$0';
+                document.getElementById('strategyBTotalInterest').textContent = '$0';
+                document.getElementById('strategyBPayoffTime').textContent = '0 years';
+                document.getElementById('strategyBTotalCost').textContent = '$0';
+                document.getElementById('strategyBTotalCostReal').textContent = '$0';
+                
+                document.getElementById('interestDifference').textContent = '$0';
+                document.getElementById('totalCostDifference').textContent = '$0';
+                document.getElementById('realCostDifference').textContent = '$0';
+                document.getElementById('inflationImpact').textContent = '$0';
+                document.getElementById('strategyRecommendation').innerHTML = 'Enter values to see recommendation';
+                return;
+            }
+            
+            // Get individual rate adjustments and buydown costs
+            const strategyARateAdjustment = parseFloat(document.getElementById('strategyARateAdjustment').value) || 0;
+            const strategyABuydownCost = parseFloat(document.getElementById('strategyABuydownCost').value) || 0;
+            const strategyBRateAdjustment = parseFloat(document.getElementById('strategyBRateAdjustment').value) || 0;
+            const strategyBBuydownCost = parseFloat(document.getElementById('strategyBBuydownCost').value) || 0;
+            
+            // Calculate adjusted rates for each strategy
+            const strategyARate = interestRate + strategyARateAdjustment;
+            const strategyBRate = interestRate + strategyBRateAdjustment;
+            
+            const strategyAMonthlyRate = strategyARate / 100 / 12;
+            const strategyBMonthlyRate = strategyBRate / 100 / 12;
+            const numPayments = loanTermYears * 12;
+            
+            // Update displayed effective rates
+            updateStrategyARateDisplay();
+            updateStrategyBRateDisplay();
+            
+            // Helper function to calculate present value of future payment
+            function presentValue(futureValue, month, annualInflationRate) {
+                const monthlyInflation = annualInflationRate / 100 / 12;
+                return futureValue / Math.pow(1 + monthlyInflation, month);
+            }
+            
+            // Strategy A: Larger down payment (buydown cost reduces available cash)
+            const strategyAAvailableCash = Math.max(0, availableCash - strategyABuydownCost);
+            const strategyADownPayment = baseDownPayment + strategyAAvailableCash;
+            const strategyALoanAmount = homePrice - strategyADownPayment;
+            const strategyADownPercent = (strategyADownPayment / homePrice) * 100;
+            
+            // Calculate monthly payment for Strategy A
+            const strategyAMonthlyPayment = strategyALoanAmount * (strategyAMonthlyRate * Math.pow(1 + strategyAMonthlyRate, numPayments)) / 
+                                          (Math.pow(1 + strategyAMonthlyRate, numPayments) - 1);
+            const strategyATotalPayments = strategyAMonthlyPayment * numPayments;
+            const strategyATotalInterest = strategyATotalPayments - strategyALoanAmount;
+            const strategyATotalCost = strategyADownPayment + strategyATotalPayments + strategyABuydownCost;
+            
+            // Calculate inflation-adjusted cost for Strategy A and collect chart data
+            let strategyARealCost = strategyADownPayment + strategyABuydownCost; // Down payment and buydown cost are paid today
+            let strategyABalanceData = [];
+            let strategyACostData = [];
+            let balanceA = strategyALoanAmount;
+            let cumulativeCostA = strategyADownPayment + strategyABuydownCost;
+            
+            strategyABalanceData.push(balanceA);
+            strategyACostData.push(cumulativeCostA);
+            
+            for (let month = 1; month <= numPayments; month++) {
+                const realPayment = presentValue(strategyAMonthlyPayment, month, inflationRate);
+                strategyARealCost += realPayment;
+                cumulativeCostA += realPayment;
+                
+                // Calculate remaining balance
+                const interestPayment = balanceA * strategyAMonthlyRate;
+                const principalPayment = strategyAMonthlyPayment - interestPayment;
+                balanceA -= principalPayment;
+                
+                // Store data points every 3 months to reduce chart density
+                if (month % 3 === 0 || month === numPayments) {
+                    strategyABalanceData.push(Math.max(0, balanceA));
+                    strategyACostData.push(cumulativeCostA);
+                }
+            }
+            
+            // Strategy B: Base down payment + extra monthly payments (buydown cost reduces available cash)
+            const strategyBAvailableCash = Math.max(0, availableCash - strategyBBuydownCost);
+            const strategyBDownPayment = baseDownPayment;
+            const strategyBLoanAmount = homePrice - strategyBDownPayment;
+            const strategyBBasePayment = strategyBLoanAmount * (strategyBMonthlyRate * Math.pow(1 + strategyBMonthlyRate, numPayments)) / 
+                                       (Math.pow(1 + strategyBMonthlyRate, numPayments) - 1);
+            
+            // Calculate extra payment: spread available cash over the loan term
+            const strategyBExtraPayment = strategyBAvailableCash / numPayments;
+            const strategyBTotalMonthlyPayment = strategyBBasePayment + strategyBExtraPayment;
+            
+            // Simulate Strategy B loan payoff with extra payments and collect chart data
+            let balance = strategyBLoanAmount;
+            let totalInterestB = 0;
+            let monthsB = 0;
+            let monthlyPayments = [];
+            let strategyBBalanceData = [balance];
+            let strategyBCostData = [strategyBDownPayment + strategyBBuydownCost];
+            let cumulativeCostB = strategyBDownPayment + strategyBBuydownCost;
+            
+            while (balance > 0 && monthsB < numPayments * 2) { // Safety limit
+                monthsB++;
+                const interestPayment = balance * strategyBMonthlyRate;
+                const principalPayment = strategyBTotalMonthlyPayment - interestPayment;
+                
+                if (principalPayment <= 0) break;
+                
+                totalInterestB += interestPayment;
+                balance -= principalPayment;
+                monthlyPayments.push(strategyBTotalMonthlyPayment);
+                
+                const realPayment = presentValue(strategyBTotalMonthlyPayment, monthsB, inflationRate);
+                cumulativeCostB += realPayment;
+                
+                // Store data points every 3 months to reduce chart density
+                if (monthsB % 3 === 0 || balance <= 0) {
+                    strategyBBalanceData.push(Math.max(0, balance));
+                    strategyBCostData.push(cumulativeCostB);
+                }
+                
+                if (balance <= 0) break;
+            }
+            
+            const strategyBTotalCost = strategyBDownPayment + (strategyBTotalMonthlyPayment * monthsB) + strategyBBuydownCost;
+            
+            // Calculate effective interest rate for Strategy B considering the extra payments
+            // The effective rate shows what the actual borrowing cost becomes with extra payments
+            const strategyBEffectiveRate = calculateStrategyEffectiveRate(strategyBLoanAmount, totalInterestB, loanTermYears);
+            
+            // Calculate inflation-adjusted cost for Strategy B
+            let strategyBRealCost = cumulativeCostB; // Already calculated during simulation
+            
+            // Create month labels for charts
+            const maxMonths = Math.max(numPayments, monthsB);
+            const strategyAMonths = [];
+            const strategyBMonths = [];
+            
+            // Generate month labels for Strategy A
+            for (let i = 0; i <= numPayments; i += 3) {
+                strategyAMonths.push(i);
+            }
+            if (strategyAMonths[strategyAMonths.length - 1] !== numPayments) {
+                strategyAMonths.push(numPayments);
+            }
+            
+            // Generate month labels for Strategy B
+            for (let i = 0; i <= monthsB; i += 3) {
+                strategyBMonths.push(i);
+            }
+            if (strategyBMonths[strategyBMonths.length - 1] !== monthsB) {
+                strategyBMonths.push(monthsB);
+            }
+            
+            // Normalize data arrays to have the same length for charting
+            const chartMonths = [];
+            for (let i = 0; i <= maxMonths; i += 3) {
+                chartMonths.push(i);
+            }
+            
+            // Pad Strategy A data if Strategy B takes longer
+            while (strategyABalanceData.length < strategyBBalanceData.length) {
+                strategyABalanceData.push(0);
+                strategyACostData.push(strategyACostData[strategyACostData.length - 1]);
+            }
+            
+            // Pad Strategy B data if Strategy A takes longer
+            while (strategyBBalanceData.length < strategyABalanceData.length) {
+                strategyBBalanceData.push(0);
+                strategyBCostData.push(strategyBCostData[strategyBCostData.length - 1]);
+            }
+            
+            // Update Strategy A displays
+            document.getElementById('strategyADownPayment').textContent = '$' + Math.round(strategyADownPayment).toLocaleString();
+            document.getElementById('strategyALoanAmount').textContent = '$' + Math.round(strategyALoanAmount).toLocaleString();
+            document.getElementById('strategyABasePayment').textContent = '$' + Math.round(strategyAMonthlyPayment).toLocaleString();
+            document.getElementById('strategyAExtraPayment').textContent = '$0';
+            document.getElementById('strategyATotalPayment').textContent = '$' + Math.round(strategyAMonthlyPayment).toLocaleString();
+            document.getElementById('strategyATotalInterest').textContent = '$' + Math.round(strategyATotalInterest).toLocaleString();
+            document.getElementById('strategyATotalPayments').textContent = '$' + Math.round(strategyATotalPayments).toLocaleString();
+            document.getElementById('strategyATotalCost').textContent = '$' + Math.round(strategyATotalCost).toLocaleString();
+            document.getElementById('strategyATotalCostReal').textContent = '$' + Math.round(strategyARealCost).toLocaleString();
+            document.getElementById('strategyAActualEffectiveRate').textContent = strategyARate.toFixed(2) + '%';
+            
+            // Update Strategy B displays
+            document.getElementById('strategyBDownPayment').textContent = '$' + Math.round(strategyBDownPayment).toLocaleString();
+            document.getElementById('strategyBLoanAmount').textContent = '$' + Math.round(strategyBLoanAmount).toLocaleString();
+            document.getElementById('strategyBBasePayment').textContent = '$' + Math.round(strategyBBasePayment).toLocaleString();
+            document.getElementById('strategyBExtraPayment').textContent = '$' + Math.round(strategyBExtraPayment).toLocaleString();
+            document.getElementById('strategyBTotalPayment').textContent = '$' + Math.round(strategyBTotalMonthlyPayment).toLocaleString();
+            document.getElementById('strategyBTotalInterest').textContent = '$' + Math.round(totalInterestB).toLocaleString();
+            document.getElementById('strategyBPayoffTime').textContent = formatMonthsToYears(monthsB);
+            document.getElementById('strategyBTotalCost').textContent = '$' + Math.round(strategyBTotalCost).toLocaleString();
+            document.getElementById('strategyBTotalCostReal').textContent = '$' + Math.round(strategyBRealCost).toLocaleString();
+            document.getElementById('strategyBActualEffectiveRate').textContent = strategyBEffectiveRate.toFixed(2) + '%';
+            
+            // Calculate differences
+            const interestDiff = strategyATotalInterest - totalInterestB;
+            const totalCostDiff = strategyATotalCost - strategyBTotalCost;
+            const realCostDiff = strategyARealCost - strategyBRealCost;
+            const inflationImpact = totalCostDiff - realCostDiff;
+            
+            // Update comparison displays
+            document.getElementById('interestDifference').textContent = '$' + Math.round(Math.abs(interestDiff)).toLocaleString();
+            document.getElementById('interestDifferenceNote').textContent = interestDiff > 0 ? 'Strategy B saves interest' : 'Strategy A saves interest';
+            document.getElementById('interestDifferenceNote').style.color = interestDiff > 0 ? '#27ae60' : '#e74c3c';
+            
+            document.getElementById('totalCostDifference').textContent = '$' + Math.round(Math.abs(totalCostDiff)).toLocaleString();
+            document.getElementById('totalCostDifferenceNote').textContent = totalCostDiff > 0 ? 'Strategy B costs less' : 'Strategy A costs less';
+            document.getElementById('totalCostDifferenceNote').style.color = totalCostDiff > 0 ? '#27ae60' : '#e74c3c';
+            
+            document.getElementById('realCostDifference').textContent = '$' + Math.round(Math.abs(realCostDiff)).toLocaleString();
+            document.getElementById('realCostDifferenceNote').textContent = realCostDiff > 0 ? 'Strategy B costs less' : 'Strategy A costs less';
+            document.getElementById('realCostDifferenceNote').style.color = realCostDiff > 0 ? '#27ae60' : '#e74c3c';
+            
+            document.getElementById('inflationImpact').textContent = '$' + Math.round(Math.abs(inflationImpact)).toLocaleString();
+            document.getElementById('inflationImpactNote').textContent = 'Inflation reduces real cost difference';
+            document.getElementById('inflationImpactNote').style.color = '#f39c12';
+            
+            // Generate recommendation based on real cost difference
+            const recommendationEl = document.getElementById('strategyRecommendation');
+            if (Math.abs(realCostDiff) < 1000) {
+                recommendationEl.innerHTML = '⚖️ STRATEGIES ARE NEARLY EQUAL (Real Cost)<br><small>Difference less than $1,000 in today\'s purchasing power</small>';
+                recommendationEl.style.background = '#f39c12';
+                recommendationEl.style.color = 'white';
+            } else if (realCostDiff > 0) {
+                recommendationEl.innerHTML = `🎯 STRATEGY B: Extra Payments<br><small>Saves $${Math.round(realCostDiff).toLocaleString()} in today's purchasing power</small>`;
+                recommendationEl.style.background = '#27ae60';
+                recommendationEl.style.color = 'white';
+            } else {
+                recommendationEl.innerHTML = `🎯 STRATEGY A: Larger Down Payment<br><small>Saves $${Math.round(Math.abs(realCostDiff)).toLocaleString()} in today's purchasing power</small>`;
+                recommendationEl.style.background = '#e74c3c';
+                recommendationEl.style.color = 'white';
+            }
+            
+            // Render the comparison charts
+            renderStrategyCharts(
+                {
+                    balanceMonths: chartMonths,
+                    balances: strategyABalanceData,
+                    costMonths: chartMonths,
+                    cumulativeCosts: strategyACostData
+                },
+                {
+                    balanceMonths: chartMonths,
+                    balances: strategyBBalanceData,
+                    costMonths: chartMonths,
+                    cumulativeCosts: strategyBCostData
+                }
+            );
+        }
+        
         // Initialize on page load
         window.onload = function() {
             updateAppreciationFromValues(); // Calculate and set appreciation rate first
             calculateMortgage(); // Initialize mortgage calculator and effective rate
+            calculateStrategyComparison(); // Initialize strategy comparison
         };
     </script>
 </body>
