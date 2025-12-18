@@ -13,6 +13,43 @@
             padding: 20px;
             background-color: #f5f5f5;
         }
+        
+        /* Tab Navigation Styles */
+        .tab-navigation {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+            background: white;
+            padding: 10px 20px 0 20px;
+            border-radius: 10px 10px 0 0;
+        }
+        .tab-button {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+        .tab-button:hover {
+            color: #2c3e50;
+            background: #f8f9fa;
+        }
+        .tab-button.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
         .container {
             background: white;
             border-radius: 10px;
@@ -296,8 +333,22 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Top Section with Summary Cards and Recommendation -->
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <button class="tab-button active" onclick="switchTab('mortgage')">🏦 Mortgage Calculator</button>
+        <button class="tab-button" onclick="switchTab('rent-sell')">🏘️ Rent or Sell</button>
+        <button class="tab-button" onclick="switchTab('strategy')">💰 Payment Strategy</button>
+    </div>
+
+    <!-- Tab 1: Rent or Sell -->
+    <div id="rent-sell" class="tab-content">
+        <div class="container">
+            <h1 class="page-title">🏘️ Rent or Sell Analysis</h1>
+            <div style="text-align: center; margin-bottom: 25px; color: #7f8c8d; font-style: italic;">
+                Compare keeping and renting your property vs selling and investing the proceeds
+            </div>
+            
+            <!-- Top Section with Summary Cards and Recommendation -->
         <div class="top-section">
             <div class="summary-card" id="rentCard">
                 <h4>🏘️ Keep & Rent</h4>
@@ -546,7 +597,10 @@
             </div>
         </div>
     </div>
+    </div>
 
+    <!-- Tab 2: Mortgage Payment Calculator -->
+    <div id="mortgage" class="tab-content active">
     <!-- Mortgage Payment Calculator -->
     <div class="container" style="margin-top: 20px;">
         <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px; font-size: 20px;">🏦 Mortgage Payment Calculator</h2>
@@ -597,7 +651,7 @@
                     </div>
                 </div>
                 <button onclick="copyToMortgageFields()" style="width: 100%; padding: 10px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                    📋 Copy to Mortgage Fields Above
+                    📋 Copy to Mortgage Fields in Rent or Sell Tab
                 </button>
             </div>
         </div>
@@ -730,7 +784,10 @@
             </div>
         </div>
     </div>
+    </div>
 
+    <!-- Tab 3: Down Payment vs Extra Payment Strategy -->
+    <div id="strategy" class="tab-content">
     <!-- Down Payment vs Extra Payment Strategy Calculator -->
     <div class="container" style="margin-top: 30px;">
         <h1 class="page-title">💰 Down Payment vs Extra Payment Strategy w/Interest Rate Buydown</h1>
@@ -2543,6 +2600,27 @@
             );
         }
         
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+        
         // Initialize on page load
         window.onload = function() {
             updateAppreciationFromValues(); // Calculate and set appreciation rate first
@@ -2550,5 +2628,6 @@
             calculateStrategyComparison(); // Initialize strategy comparison
         };
     </script>
+    </div>
 </body>
 </html>
